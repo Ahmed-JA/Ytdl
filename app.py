@@ -4,7 +4,7 @@ import yt_dlp
 
 app = Flask(__name__)
 
-# بيانات دروب بوكس
+# بيانات دروب بوكس (ثابتة)
 DROPBOX_CRED = {
     "id": "9d4qz7zbqursfqv",
     "secret": "m26mrjxgbf8yk91",
@@ -24,50 +24,37 @@ def get_token():
 def run_task(url, folder, mode, quality):
     global status
     token = get_token()
-    status.update({"active": True, "log": "📡 محاولة الاتصال عبر بروتوكول مشفر...", "done": 0, "total": 1})
+    status.update({"active": True, "log": "🚀 جاري السحب من المنصة الجديدة...", "done": 0, "total": 1})
     
-    base_dropbox = f"/خاص يوتيوب/{folder}"
-    filename_base = f"ByAK_{int(time.time())}"
-    
-    # إعدادات متقدمة جداً لاستخدام "مشغل الويب" بدلاً من "مشغل الأندرويد"
-    dl_opts = {
-        'format': 'bestaudio/best' if mode == "Audio Only" else f'bestvideo[height<={quality}][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-        'outtmpl': f'{filename_base}.%(ext)s',
+    ydl_opts = {
+        'format': 'bestaudio/best' if mode == "Audio Only" else f'bestvideo[height<={quality}]+bestaudio/best',
+        'outtmpl': 'ByAK_file.%(ext)s',
         'quiet': True,
         'no_check_certificate': True,
-        'youtube_include_dash_manifest': False,
-        'extract_flat': False,
-        # تقنية تخطي الحظر عبر محاكاة مشغل يوتيوب الرسمي (Web Client)
-        'client_name': 'WEB',
-        'client_version': '2.20240210.01.00',
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36',
     }
 
     if mode == "Audio Only":
-        dl_opts.update({'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192'}]})
+        ydl_opts.update({'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}]})
 
     try:
-        with yt_dlp.YoutubeDL(dl_opts) as ydl:
-            status["log"] = "📥 جاري سحب البيانات (Web Bypass)..."
-            # محاولة التحميل
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
             
         ext = "mp3" if mode == "Audio Only" else "mp4"
-        downloaded_file = f"{filename_base}.{ext}"
+        filename = f"ByAK_file.{ext}"
         
-        if os.path.exists(downloaded_file):
-            status["log"] = "📤 جاري الرفع لدروب بوكس..."
-            final_path = f"{base_dropbox}/{'Audio' if mode == 'Audio Only' else 'Videos'}/001 - Done ByAK.{ext}"
-            
-            with open(downloaded_file, "rb") as f:
+        if os.path.exists(filename):
+            status["log"] = "📤 رفع سحابي..."
+            path = f"/خاص يوتيوب/{folder}/{mode}/{int(time.time())}_ByAK.{ext}"
+            with open(filename, "rb") as f:
                 requests.post("https://content.dropboxapi.com/2/files/upload", 
-                    headers={"Authorization": f"Bearer {token}", "Dropbox-API-Arg": json.dumps({"path": final_path, "mode": "overwrite"})},
+                    headers={"Authorization": f"Bearer {token}", "Dropbox-API-Arg": json.dumps({"path": path, "mode": "overwrite"})},
                     data=f)
-            
-            os.remove(downloaded_file)
+            os.remove(filename)
             status.update({"done": 1, "log": "✅ تم الرفع بنجاح!"})
         else:
-            status["log"] = "🚫 يوتيوب حظر الـ IP بشكل نهائي لهذا السيرفر"
-
+            status["log"] = "❌ لم يتم سحب الملف"
     except Exception as e:
         status["log"] = f"⚠️ خطأ: {str(e)[:40]}"
     
@@ -77,14 +64,14 @@ def run_task(url, folder, mode, quality):
 def index():
     return render_template_string('''
     <body style="background:#000; color:#d4af37; text-align:center; font-family:sans-serif; padding:20px;">
-        <div style="border:1px solid #d4af37; padding:20px; border-radius:15px; max-width:400px; margin:auto;">
-            <h3>🛰️ رادار يوتيوب v5.0</h3>
-            <input id="u" placeholder="الرابط" style="width:100%; padding:10px; margin:10px 0;">
-            <input id="f" placeholder="المجلد" style="width:100%; padding:10px; margin:10px 0;">
-            <select id="m" style="width:100%; padding:10px; margin:10px 0;"><option>Audio Only</option><option>Videos Only</option></select>
-            <button onclick="start()" id="btn" style="width:100%; padding:10px; background:#d4af37; border:none; font-weight:bold;">تشغيل</button>
-            <div id="l" style="margin-top:20px;">الحالة: جاهز</div>
-            <div id="stats" style="font-size:12px; margin-top:5px;">0 / 1</div>
+        <div style="border:2px solid #d4af37; padding:20px; border-radius:15px; max-width:400px; margin:auto;">
+            <h3>🛰️ رادار يوتيوب v6.1</h3>
+            <p style="font-size:12px; color:white;">المنصة: نشطة ✅</p>
+            <input id="u" placeholder="الرابط" style="width:100%; padding:10px; margin:10px 0; box-sizing:border-box;">
+            <input id="f" placeholder="المجلد" style="width:100%; padding:10px; margin:10px 0; box-sizing:border-box;">
+            <select id="m" style="width:100%; padding:10px; margin:10px 0; box-sizing:border-box;"><option>Audio Only</option><option>Videos Only</option></select>
+            <button onclick="start()" id="btn" style="width:100%; padding:12px; background:#d4af37; border:none; font-weight:bold; border-radius:8px;">تشغيل المحرك</button>
+            <div id="l" style="margin-top:20px; font-weight:bold;">الحالة: جاهز</div>
         </div>
         <script>
             function start(){
@@ -96,7 +83,6 @@ def index():
             async function poll(){
                 const res = await fetch('/status'); const d = await res.json();
                 document.getElementById('l').innerText = d.log;
-                document.getElementById('stats').innerText = d.done + " / 1";
                 if(d.active) setTimeout(poll, 2000); else document.getElementById('btn').disabled = false;
             }
         </script>
@@ -113,4 +99,6 @@ def run():
 def get_status(): return jsonify(status)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7860)
+    # الحصول على المنفذ تلقائياً من المنصة لتجنب 404
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
