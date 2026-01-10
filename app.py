@@ -4,7 +4,7 @@ import yt_dlp
 
 app = Flask(__name__)
 
-# بيانات دروب بوكس الخاصة بك
+# بيانات دروب بوكس الثابتة
 DROPBOX_CRED = {
     "id": "9d4qz7zbqursfqv",
     "secret": "m26mrjxgbf8yk91",
@@ -22,26 +22,33 @@ def get_token():
 def run_task(url, folder):
     global status
     token = get_token()
-    status.update({"active": True, "log": "📥 جاري السحب..."})
+    status.update({"active": True, "log": "📥 جاري سحب الملف..."})
     try:
-        ydl_opts = {'format': 'bestaudio/best', 'outtmpl': 'audio.mp3', 'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}]}
+        # استخدام إعدادات مخففة لتجنب الحظر على المنصة الجديدة
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': 'audio.mp3',
+            'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}],
+            'nocheckcertificate': True
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
+            
         if os.path.exists("audio.mp3"):
-            status["log"] = "📤 جاري الرفع..."
+            status["log"] = "📤 جاري الرفع للسحاب..."
             path = f"/خاص يوتيوب/{folder}/{int(time.time())}.mp3"
             with open("audio.mp3", "rb") as f:
                 requests.post("https://content.dropboxapi.com/2/files/upload", 
                     headers={"Authorization": f"Bearer {token}", "Dropbox-API-Arg": json.dumps({"path": path, "mode": "overwrite"})}, data=f)
             os.remove("audio.mp3")
-            status["log"] = "✅ تم بنجاح!"
+            status["log"] = "✅ تم الرفع بنجاح!"
     except Exception as e:
-        status["log"] = f"⚠️ خطأ: {str(e)[:30]}"
+        status["log"] = f"⚠️ خطأ: {str(e)[:40]}"
     status["active"] = False
 
 @app.route('/')
 def index():
-    return render_template_string('<body style="background:#000;color:#d4af37;text-align:center;padding:50px;font-family:sans-serif;"><h2>🛰️ رادار Koyeb v1</h2><input id="u" placeholder="رابط يوتيوب" style="width:80%;padding:12px;margin:10px;"><br><input id="f" placeholder="اسم المجلد" style="width:80%;padding:12px;"><br><br><button onclick="start()" style="background:#d4af37;color:#000;padding:15px 60px;border:none;font-weight:bold;border-radius:10px;">ابدأ السحب</button><h3 id="l" style="margin-top:30px;">الحالة: جاهز</h3><script>function start(){const d={url:document.getElementById("u").value,folder:document.getElementById("f").value};fetch("/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});poll();}async function poll(){const res=await fetch("/status");const d=await res.json();document.getElementById("l").innerText="الحالة: " + d.log;if(d.active)setTimeout(poll,2000);}</script></body>')
+    return render_template_string('<body style="background:#000;color:#d4af37;text-align:center;padding:50px;font-family:sans-serif;"><h2>🛰️ رادار Koyeb v1.1</h2><input id="u" placeholder="رابط يوتيوب" style="width:90%;max-width:400px;padding:12px;margin:10px;border-radius:10px;"><br><input id="f" placeholder="اسم المجلد" style="width:90%;max-width:400px;padding:12px;border-radius:10px;"><br><br><button onclick="start()" style="background:#d4af37;color:#000;padding:15px 60px;border:none;font-weight:bold;border-radius:10px;cursor:pointer;">ابدأ السحب الآن</button><h3 id="l" style="margin-top:30px;">الحالة: جاهز</h3><script>function start(){const d={url:document.getElementById("u").value,folder:document.getElementById("f").value};fetch("/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});poll();}async function poll(){const res=await fetch("/status");const d=await res.json();document.getElementById("l").innerText="الحالة: " + d.log;if(d.active)setTimeout(poll,2000);}</script></body>')
 
 @app.route('/run', methods=['POST'])
 def run():
@@ -53,6 +60,6 @@ def run():
 def get_status(): return jsonify(status)
 
 if __name__ == '__main__':
-    # مهم جداً لـ Koyeb
+    # المنفذ 8080 هو ما تطلبه Koyeb في إعدادات الصحة (Health Checks) التي ظهرت في صورتك
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
