@@ -1,4 +1,3 @@
-غير مهم الان اريد ان يدعم هذا الكود روابط القنوات مباشرة
 import os, requests, json, threading, time, gc
 from flask import Flask, render_template_string, request, jsonify
 import yt_dlp
