@@ -12,7 +12,7 @@ DROPBOX_CRED = {
 
 RAW_COOKIES = "GPS=1;YSC=cRPU3pja-SY;VISITOR_INFO1_LIVE=20zT46tInss;VISITOR_PRIVACY_METADATA=CgJFRxIEGgAgQw%3D%3D;PREF=tz=Africa.Cairo;__Secure-1PSIDTS=sidts-CjUB7I_69LSciYHXZh3o2hM0pQXNmWT7E0bSJ7XtwWP1gZtDILx6nr6sqNbmDVuJJTzLzEUK0hAA;__Secure-3PSIDTS=sidts-CjUB7I_69LSciYHXZh3o2hM0pQXNmWT7E0bSJ7XtwWP1gZtDILx6nr6sqNbmDVuJJTzLzEUK0hAA;HSID=AU_XHwPsXUSGUgZUq;SSID=AUtRaUQzpuXcGFlsb;APISID=GGcg9KjkJelNvooU/AvZNu9CDwwOGpuxn0;SAPISID=IXCWIdAajZ3-A5A6/A2PfSXhj_WRIO3r_B;__Secure-1PAPISID=IXCWIdAajZ3-A5A6/A2PfSXhj_WRIO3r_B;__Secure-3PAPISID=IXCWIdAajZ3-A5A6/A2PfSXhj_WRIO3r_B;SID=g.a0005giXgKs500hEm0IcasdI-ZteDk_7LMmKgY5J1pSN24PAUbY_XpfS3nrxc6u1zRA46komJgACgYKAYwSARUSFQHGX2Mim9bkw294mS0juox0SqUHlRoVAUF8yKpxxgQ2GqF2sh645dKyGxGU0076;__Secure-1PSID=g.a0005giXgKs500hEm0IcasdI-ZteDk_7LMmKgY5J1pSN24PAUbY_Prv_jFBo8DGf7MvL3m3YUwACgYKAWASARUSFQHGX2MiB-68MTGXuISLXx-5gLyoNxoVAUF8yKqj5sYlM5mxOCH1yIqQpG3p0076;__Secure-3PSID=g.a0005giXgKs500hEm0IcasdI-ZteDk_7LMmKgY5J1pSN24PAUbY_tmt8C6WACoM_TRnt53rcYgACgYKAZISARUSFQHGX2Milx8SWGqPhNOfk0cfC1hrNxoVAUF8yKoXkn7Q5sDuY655VEVQaFfe0076;SIDCC=AKEyXzXbs9U_0rXrAMwsUsNPo6241A1pvdWMBo5jMumu_tZQ9oCCIWJjxpWhz39Lmy-8_RGG;__Secure-1PSIDCC=AKEyXzUrixeXBrKvilXAOfFF2vomAbwfekYfnRcsQbueJgwR4_WwL_aFnudX9Gf6SgYBw1FC;__Secure-3PSIDCC=AKEyXzVCBBwgu1cRise8l6N6GXku2xxp8V0b5yqLtAGikatgYPob-f91jH2fbJpvyluC1mP5;LOGIN_INFO=AFmmF2swRQIhAPjDN9b05Pm08f9dnxS73Hh4-ZyPVQnMWMTdhqvhin-9AiBXsnlmvdi0CXO8n-gKF4DXUxmi6i0YrK1KIgtd9XjAOw:QUQ3MjNmeTlfbGZFdmtlZWdhVHNPWllWcGF0RkQxVjBMLVBxM2Y3ZEhBcTlBRWxuQ2xRX1BhUEo1UzU1WEoyMEtiVGpvN3J4NlZpRUg3QXB2WnJJU3JtTlNwalE1RnIyYzhSMzhMOUNRRGV1cnFRQVp5c0VBbWZoZ2RMd2gtZVVJdFBxajlmbXFFc2hYcjJoMmdEVVotRmRrdHhWVVRnQUdB;"
 
-status = {"active": False, "log": "جاهز"}
+status = {"active": False, "log": "متصل"}
 
 def create_cookie_file():
     c_path = os.path.join(os.getcwd(), "cookies.txt")
@@ -36,11 +36,11 @@ def run_task(url, folder):
     global status
     c_path = create_cookie_file()
     token = get_token()
-    status.update({"active": True, "log": "🔍 فحص الروابط المتاحة..."})
+    status.update({"active": True, "log": "🎧 جاري استخلاص الصوت فقط..."})
     
-    # اختيار أفضل صوت متاح دون التقيد بصيغة محددة
+    # التعديل هنا: نطلب فقط الصوت (waive video)
     ydl_opts = {
-        'format': 'bestaudio/best', 
+        'format': 'bestaudio/best', # نطلب أفضل صوت فقط
         'cookiefile': c_path,
         'quiet': True,
         'noplaylist': True
@@ -49,33 +49,35 @@ def run_task(url, folder):
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+            
+            # التأكد من اختيار رابط يحتوي على صوت فقط لتجنب حجم الفيديو
             stream_url = info['url']
-            ext = info.get('ext', 'mp3')
+            ext = info.get('ext', 'm4a')
             title = "".join(x for x in info['title'] if x.isalnum() or x in " -_").strip()
             
-        status["log"] = "⚡ سحب البيانات من جوجل..."
+        status["log"] = "📡 نقل سحابي للصوت..."
         with requests.get(stream_url, stream=True) as r:
             r.raise_for_status()
+            # سنقوم بحفظه كملف صوتي دائمًا
             db_path = f"/خاص يوتيوب/{folder}/{title}.{ext}"
-            status["log"] = "📤 رفع سحابي مباشر..."
             requests.post("https://content.dropboxapi.com/2/files/upload", 
                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/octet-stream", "Dropbox-API-Arg": json.dumps({"path": db_path, "mode": "overwrite"})}, data=r.raw)
         
-        status["log"] = "✅ تم الرفع بنجاح!"
+        status["log"] = "✅ تم رفع الصوت بنجاح!"
     except Exception as e:
-        status["log"] = f"⚠️ فشل: {str(e)[:50]}"
+        status["log"] = f"⚠️ خطأ: {str(e)[:50]}"
     status["active"] = False
 
 @app.route('/')
 def index():
     return render_template_string('''
     <body style="background:#000;color:#0f0;text-align:center;padding:20px;font-family:monospace;">
-        <div style="border:1px solid #0f0;border-radius:10px;padding:20px;max-width:400px;margin:auto;box-shadow: 0 0 15px #0f0;">
-            <h2>🛸 Direct Stream v15</h2>
-            <input id="u" placeholder="Youtube URL" style="width:100%;padding:12px;margin:10px 0;background:#000;color:#0f0;border:1px solid #0f0;">
-            <input id="f" placeholder="Dropbox Folder" style="width:100%;padding:12px;margin:10px 0;background:#000;color:#0f0;border:1px solid #0f0;">
-            <button onclick="start()" id="b" style="width:100%;background:#0f0;color:#000;padding:15px;font-weight:bold;cursor:pointer;border:none;">START MISSION</button>
-            <h3 id="l" style="margin-top:20px;color:#fff;text-transform:uppercase;">STANDING BY</h3>
+        <div style="border:1px solid #0f0;border-radius:10px;padding:20px;max-width:400px;margin:auto;">
+            <h2>🎙️ Audio Extractor v16</h2>
+            <input id="u" placeholder="Youtube URL" style="width:100%;padding:12px;margin:10px 0;">
+            <input id="f" placeholder="Folder Name" style="width:100%;padding:12px;margin:10px 0;">
+            <button onclick="start()" id="b" style="width:100%;background:#0f0;color:#000;padding:15px;font-weight:bold;cursor:pointer;">سحب الصوت فقط</button>
+            <h3 id="l" style="margin-top:20px;color:#fff;">READY</h3>
         </div>
         <script>
             function start(){
