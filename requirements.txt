@@ -1,4 +1,4 @@
-flask
+telethon
 requests
-yt-dlp
+flask
 gunicorn
